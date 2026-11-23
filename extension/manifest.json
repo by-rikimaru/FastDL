@@ -1,0 +1,10 @@
+{
+  "manifest_version": 3,
+  "name": "FastDL Yakalayıcı",
+  "version": "1.0",
+  "description": "fuckingfast linklerini ve indirmelerini FastDL indirme yöneticisine gönderir.",
+  "permissions": ["downloads", "cookies", "contextMenus", "scripting", "tabs", "storage"],
+  "host_permissions": ["<all_urls>"],
+  "background": { "service_worker": "background.js" },
+  "action": { "default_popup": "popup.html", "default_title": "FastDL" }
+}

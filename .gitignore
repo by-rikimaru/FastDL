@@ -1,0 +1,15 @@
+# Kullanıcı verileri (yeni sürümler bunları %APPDATA%\FastDL içinde tutar)
+config.json
+jobs.json
+jobs.json.tmp
+
+# Derleme çıktıları
+dist/
+installer/python-installer.exe
+__pycache__/
+*.pyc
+
+# Yarım indirmeler ve diğer
+*.fdlpart
+*.msix
+*.exe

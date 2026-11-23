@@ -1,0 +1,53 @@
+name: Release
+
+# "v1.2.3" biçiminde bir etiket gönderilince kurulumu derler ve GitHub Release olarak yayınlar.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+env:
+  PYTHON_VERSION: "3.12.10"
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sürümü belirle ve koddaki sürümle karşılaştır
+        shell: pwsh
+        run: |
+          $v = "${{ github.ref_name }}".TrimStart("v")
+          $code = (Select-String -Path fastdl.pyw -Pattern '^VERSION = "(.+)"').Matches[0].Groups[1].Value
+          if ($v -ne $code) { throw "Etiket v$v ama fastdl.pyw içindeki VERSION $code" }
+          "VERSION=$v" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: Python kurucusunu indir (kuruluma gömülecek)
+        shell: pwsh
+        run: |
+          $url = "https://www.python.org/ftp/python/$env:PYTHON_VERSION/python-$env:PYTHON_VERSION-amd64.exe"
+          Invoke-WebRequest $url -OutFile installer\python-installer.exe
+          $sig = Get-AuthenticodeSignature installer\python-installer.exe
+          if ($sig.Status -ne "Valid") { throw "Python kurucusunun imzası geçersiz: $($sig.Status)" }
+          Write-Host "İmza: $($sig.SignerCertificate.Subject)"
+
+      - name: Inno Setup kur
+        run: choco install innosetup -y --no-progress
+
+      - name: Kurulumu derle
+        shell: pwsh
+        run: |
+          & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" "/DAppVersion=$env:VERSION" installer\FastDL.iss
+          if ($LASTEXITCODE -ne 0) { throw "ISCC başarısız" }
+          Get-ChildItem dist
+
+      - name: GitHub Release oluştur
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ github.ref_name }}" "dist\FastDL-Setup-$env:VERSION.exe" `
+            --title "FastDL ${{ github.ref_name }}" --generate-notes
